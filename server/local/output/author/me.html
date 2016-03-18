@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8">
+        <title>local_server - me</title>
+        <link rel="stylesheet" href="/theme/css/main.css">
+                
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">local_server </a></h1>
+                <nav><ul>
+                                                                                    <li ><a href="/category/edx.html">edx</a></li>
+                                                </ul></nav>
+        </header><!-- /#banner -->
+                
+            
+
+                            <aside id="featured" class="body">
+                <article>
+                    <h1 class="entry-title"><a href="/django-source-code-explore-note.html">django源码阅读笔记</a></h1> 
+                    <footer class="post-info">
+        <abbr class="published" title="2016-03-07T00:00:00">
+                一 07 三月 2016
+        </abbr>
+
+                <address class="vcard author">
+                By <a class="url fn" href="/author/me.html">me</a>
+        </address>
+        <p>In <a href="/category/edx.html">edx</a>. </p>
+<p>tags: <a href="/tag/django.html">django</a></p>
+</footer><!-- /.post-info --><p>Open edX的后端采用Django来写，Django是一个大而全的web框架，许多地方和Rails相似</p>
+<p>Open edX对Django框架做了大量的改造，对其特性的应用也是十分全面。由于时常需要去hack Open edX，以至于不得不深入到Django源码本身，读别人的源码，和大多事情一样，都符合万事开头难的规律，深入之后，其乐无穷.</p>
+<blockquote>
+<p>初极狭，才通人，复行数十步，豁然开朗</p>
+</blockquote>
+<p>Open edX的最新稳定版所依赖的Django版本为1.8.7，所以我主要阅读的也是这个版本的源码:<a href="https://github.com/django/django/tree/1.8.7">Django 1.8.7</a></p>
+<p>下面下阅读过程一些值得记录的地方记下来</p>
+<h1>django-admin</h1>
+<p>安装django后，我们会获得一个命令行工具<code>django-admin</code>，用于创建django项目和djangoapp</p>
+<p>这主要是通过<a href="https://github.com/django/django/blob/1.8.7/setup.py#L47">entry_points</a>实现</p>
+<div class="highlight"><pre>entry_points={&#39;console_scripts&#39;: [
+        &#39;django-admin = django.core.management:execute_from_command_line&#39;,
+    ]},
+</pre></div>
+
+
+<p>通过entry_points,我们可以将python函数注册到系统，这对于用python写系统应用十分有用</p>
+<h1>request</h1>
+<p>首先来看看<a href="https://github.com/django/django/blob/1.8.7/django%2Fhttp%2Frequest.py#L42">HttpRequest</a></p>
+<div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">GET</span> <span class="o">=</span> <span class="n">QueryDict</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">POST</span> <span class="o">=</span> <span class="n">QueryDict</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+
+
+<h3>QueryDict</h3>
+<p>request的两个GET和POST属性是<a href="https://github.com/django/django/blob/1.8.7/django%2Fhttp%2Frequest.py#L316">QueryDict</a>.
+QueryDict集成自<a href="https://github.com/django/django/blob/1.8.7/django%2Futils%2Fdatastructures.py#L285">MultiValueDict</a></p>
+<p>MultiValueDict来自<a href="https://github.com/django/django/blob/1.8.7/django%2Futils%2Fdatastructures.py">django/django/utils/datastructures.py</a>,是django为自身打造的一种抽象数据结构，这个抽象数据结构主要是为了解决这个问题</p>
+<blockquote>
+<p>This class exists to solve the irritating problem raised by cgi.parse_qs,which returns a list for every key, even though most Web forms submitsingle name-value pairs.</p>
+</blockquote>
+<h3>MultiPartParser</h3>
+<p><a href="https://github.com/django/django/blob/1.8.7/django/http/multipartparser.py#L45">MultiPartParser</a>类的主要作用是：</p>
+<blockquote>
+<p>Multi-part parsing for file uploads.</p>
+</blockquote>
+<hr />
+<p>更多的可用属性和方法参考:<a href="https://docs.djangoproject.com/en/1.8/ref/request-response/">Request and response objects</a></p>
+<h1>response</h1>
+<p><a href="https://github.com/django/django/blob/1.8.7/django/http/response.py#L330">HttpResponse</a></p>
+<blockquote>
+<p>An HTTP response class with a string as content.
+     This content that can be read, appended to or replaced.</p>
+</blockquote>
+<h3>JsonResponse</h3>
+<p><a href="https://github.com/django/django/blob/1.8.7/django/http/response.py#L517">django/django/http/response.py JsonResponse</a></p>
+<div class="highlight"><pre>class JsonResponse(HttpResponse):
+        ...
+        kwargs.setdefault(&#39;content_type&#39;, &#39;application/json&#39;)
+        data = json.dumps(data, cls=encoder)
+        super(JsonResponse, self).__init__(content=data, **kwargs)
+</pre></div>
+
+
+<h1>middleware</h1>
+<blockquote>
+<p>Middleware is a framework of hooks into Django’s request/response processing. It’s a light, low-level “plugin” system for globally altering Django’s input or output.</p>
+</blockquote>
+<p>我们关注一下几个middleware</p>
+<div class="highlight"><pre>    <span class="s">&#39;django.contrib.sessions.middleware.SessionMiddleware&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.middleware.common.CommonMiddleware&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.middleware.csrf.CsrfViewMiddleware&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.contrib.auth.middleware.AuthenticationMiddleware&#39;</span><span class="p">,</span>
+</pre></div>
+
+
+<h3><a href="https://github.com/django/django/blob/1.8.7/django/contrib/sessions/middleware.py#L9">SessionMiddleware</a></h3>
+<h5>process_request</h5>
+<div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">engine</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">SESSION_ENGINE</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SessionStore</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">SessionStore</span>
+    <span class="k">def</span> <span class="nf">process_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">session_key</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">COOKIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">SESSION_COOKIE_NAME</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SessionStore</span><span class="p">(</span><span class="n">session_key</span><span class="p">)</span>
+</pre></div>
+
+
+<h5>process_response</h5>
+<blockquote>
+<p>process_response() is called on all responses before they’re returned to the browser.  </p>
+</blockquote>
+<div class="highlight"><pre>                        <span class="n">response</span><span class="o">.</span><span class="n">set_cookie</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">SESSION_COOKIE_NAME</span><span class="p">,</span>
+                                <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">session_key</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="n">max_age</span><span class="p">,</span>
+                                <span class="n">expires</span><span class="o">=</span><span class="n">expires</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">SESSION_COOKIE_DOMAIN</span><span class="p">,</span>
+                                <span class="n">path</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">SESSION_COOKIE_PATH</span><span class="p">,</span>
+                                <span class="n">secure</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">SESSION_COOKIE_SECURE</span> <span class="ow">or</span> <span class="bp">None</span><span class="p">,</span>
+                                <span class="n">httponly</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">SESSION_COOKIE_HTTPONLY</span> <span class="ow">or</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+
+
+<h3><a href="https://github.com/django/django/blob/1.8.7/django%2Fmiddleware%2Fcommon.py#L16">CommonMiddleware</a></h3>
+<p>使用条件分支来过滤非法客户端</p>
+<div class="highlight"><pre>        <span class="k">if</span> <span class="s">&#39;HTTP_USER_AGENT&#39;</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">META</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">user_agent_regex</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">DISALLOWED_USER_AGENTS</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">user_agent_regex</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">META</span><span class="p">[</span><span class="s">&#39;HTTP_USER_AGENT&#39;</span><span class="p">]):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Forbidden (User agent): </span><span class="si">%s</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                        <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s">&#39;status_code&#39;</span><span class="p">:</span> <span class="mi">403</span><span class="p">,</span>
+                            <span class="s">&#39;request&#39;</span><span class="p">:</span> <span class="n">request</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="n">http</span><span class="o">.</span><span class="n">HttpResponseForbidden</span><span class="p">(</span><span class="s">&#39;&lt;h1&gt;Forbidden&lt;/h1&gt;&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>ETag header的处理也在CommonMiddleware</p>
+<h3><a href="https://github.com/django/django/blob/1.8.7/django/middleware/csrf.py#L76">CsrfViewMiddleware</a></h3>
+<h5>process_view</h5>
+<div class="highlight"><pre>        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="s">&#39;csrf_exempt&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">None</span>
+</pre></div>
+
+
+<p>callback come from <code>def process_view(self, request, callback, callback_args, callback_kwargs):</code>,callback是装饰器？</p>
+<h3><a href="https://github.com/django/django/blob/master/django%2Fcontrib%2Fauth%2Fmiddleware.py#L14">AuthenticationMiddleware</a></h3>
+<h5>process_request</h5>
+<div class="highlight"><pre>    <span class="k">def</span> <span class="nf">process_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s">&#39;session&#39;</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s">&quot;The Django authentication middleware requires session middleware &quot;</span>
+            <span class="s">&quot;to be installed. Edit your MIDDLEWARE_CLASSES setting to insert &quot;</span>
+            <span class="s">&quot;&#39;django.contrib.sessions.middleware.SessionMiddleware&#39; before &quot;</span>
+            <span class="s">&quot;&#39;django.contrib.auth.middleware.AuthenticationMiddleware&#39;.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">SimpleLazyObject</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">get_user</span><span class="p">(</span><span class="n">request</span><span class="p">))</span>
+</pre></div>
+
+
+<p>注意断言（assert）的使用，这里设置了request.user,并且</p>
+<blockquote>
+<p>The Django authentication middleware requires session middleware</p>
+</blockquote>
+<h3>get_user</h3>
+<p><a href="https://github.com/django/django/blob/1.8.7/django%2Fcontrib%2Fauth%2F__init__.py#L159">get_user</a></p>
+<h1>backends</h1>
+<h3><a href="https://github.com/django/django/blob/1.8.7/django%2Fcontrib%2Fauth%2Fbackends.py#L7">ModelBackend</a></h3>
+<p>By default, AUTHENTICATION_BACKENDS is set to:  <code>['django.contrib.auth.backends.ModelBackend']</code></p>
+<h3>CASBackend</h3>
+<p>look at <a href="https://github.com/wwj718/django-cas/blob/wwj/1.2.0/cas/backends.py#L218">CASBackend</a></p>
+<h1>storage system</h1>
+<h3>qiniu</h3>
+<h1>参考</h1>
+<ul>
+<li><a href="https://github.com/django/django/tree/1.8.7">django/django</a></li>
+<li><a href="https://docs.djangoproject.com/en/1.8/">Django documentation 1.8</a></li>
+<li><a href="http://www.djangobook.com/en/2.0/index.html">djangobook</a><ul>
+<li><a href="http://djangobook.py3k.cn/2.0/">中文版</a></li>
+</ul>
+</li>
+<li><a href="http://www.djangobook.com/en/2.0/appendixG.html">Appendix G: Request and Response Objects</a><ul>
+<li><a href="http://djangobook.py3k.cn/appendixH/">中文版</a></li>
+</ul>
+</li>
+<li><a href="https://docs.djangoproject.com/en/1.8/topics/http/middleware/">Django documentation Middleware</a></li>
+<li><a href="https://docs.djangoproject.com/en/1.9/topics/auth/customizing/">Customizing authentication in Django</a></li>
+<li><a href="https://docs.djangoproject.com/en/1.9/howto/custom-file-storage/">Writing a custom storage system</a></li>
+</ul>                </article>
+                                    <p class="paginator">
+        Page 1 / 1
+    </p>
+                            </aside><!-- /#featured -->
+                                                </ol><!-- /#posts-list -->
+                        </section><!-- /#content -->
+                    <section id="extras" class="body">
+                        <div class="blogroll">
+                        <h2>blogroll</h2>
+                        <ul>
+                                                    <li><a href="http://getpelican.com/">Pelican</a></li>
+                                                    <li><a href="http://python.org/">Python.org</a></li>
+                                                    <li><a href="http://jinja.pocoo.org/">Jinja2</a></li>
+                                                    <li><a href="#">You can modify those links in your config file</a></li>
+                                                </ul>
+                </div><!-- /.blogroll -->
+                                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/None" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            
+                                                    <li><a href="#">You can add links in your config file</a></li>
+                                                    <li><a href="#">Another social link</a></li>
+                                                </ul>
+                </div><!-- /.social -->
+                </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+
+                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

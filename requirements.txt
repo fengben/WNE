@@ -3,4 +3,5 @@ percol==0.2.1 #for search
 pyhonpy==0.4.9 #pipe
 pelican==3.2 
 markdown==2.6.5
+jinja2==2.7.3
 

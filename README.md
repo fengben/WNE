@@ -42,7 +42,7 @@ WNE Not Evernote
   *  unix/linux工具链：ack/grep
   *  elasticsearch
   *  github/gitlab本身支持仓库内搜索
-  *  打造搜索脚本在client里用/在jupyter中开一个terminal，结合ack和PathPicker
+  *  打造搜索脚本在client里用/在jupyter中开一个terminal，结合ack/grep和percol
 
 ###Maybe
 由于围绕纯文本，十分轻量化，拓展起来十分便利

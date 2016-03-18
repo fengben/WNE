@@ -64,7 +64,7 @@ WNE Not Evernote
     *  类似geeknote的命令行工具
     *  微信作为客户端
 
-#YAN可能吸引你的地方
+#WNE可能吸引你的地方
 *  文本化，你可以对接到任何你喜欢的unix/linux工具套件（vim/sed/ack/grep/），这个特性对技术人员十分有利
   *  支持正则
 *  版本管理

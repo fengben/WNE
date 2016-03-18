@@ -17,6 +17,17 @@ WNE Not Evernote
   *  使用jupyter来写作
   *  使用git管理笔记
 
+#截图（已实现功能）
+以下是笔记本截图
+![notebook](images/notebook.png)
+
+以下是笔记
+![note](images/note.png)
+
+以下是搜索功能
+![search](images/search.png)
+
+
 ###一般notebook的常用特性
 列举一般笔记系统的常用特性
 
